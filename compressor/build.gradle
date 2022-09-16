@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'com.github.dcendents.android-maven'
-apply plugin: 'jacoco-android'
+//apply plugin: 'com.github.dcendents.android-maven'
+//apply plugin: 'jacoco-android'
 
 ext {
     PUBLISH_GROUP_ID = 'id.zelory'
@@ -9,7 +9,7 @@ ext {
     PUBLISH_ARTIFACT_ID = 'compressor'
 }
 
-apply from: "$rootDir/gradle/publish_maven.gradle"
+//apply from: "$rootDir/gradle/publish_maven.gradle"
 
 android {
     compileSdkVersion 29
