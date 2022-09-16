@@ -35,8 +35,10 @@ fun Bitmap.CompressFormat.extension() = when (this) {
     else -> "jpg"
 }
 
-fun loadBitmap(imageFile: File) = BitmapFactory.decodeFile(imageFile.absolutePath).run {
-    determineImageRotation(imageFile, this)
+fun loadBitmap(imageFile: File): Bitmap {
+    val loaded = BitmapFactory.decodeFile(imageFile.absolutePath)
+    require(loaded != null) { "Failed to load bitmap from $imageFile" }
+    return determineImageRotation(imageFile, loaded)
 }
 
 fun decodeSampledBitmapFromFile(imageFile: File, reqWidth: Int, reqHeight: Int): Bitmap {
@@ -108,32 +110,22 @@ internal fun copyToCache(context: Context, srcFileUri: Uri): File {
 
 internal fun getFileName(context: Context, uri: Uri) : String {
     val resolver = context.contentResolver
-    val cursor = resolver.query(
-            uri, arrayOf(OpenableColumns.DISPLAY_NAME
-    ), null, null, null
-    )
-    cursor.use {
-        val nameIndex = it!!.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-        if (it.moveToFirst()) {
-            return it.getString(nameIndex)
-        } else {
-            val prefix = "IMG_" + SimpleDateFormat(
-                    "yyyyMMdd_",
-                    Locale.getDefault()
-            ).format(Date()) + System.nanoTime()
-            return when (val fileMimeType = resolver.getType(uri)) {
-                "image/jpg", "image/jpeg" -> {
-                    "$prefix.jpeg"
-                }
-                "image/png" -> {
-                    "$prefix.png"
-                }
-                else -> {
-                    throw IllegalStateException("$fileMimeType fallback display name not supported")
-                }
-            }
+    return runCatching {
+        resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)!!.use { cursor ->
+            check(cursor.moveToFirst()) { "Cursor is empty" }
+            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            cursor.getString(nameIndex).takeIf { it.isNotBlank() }!!
         }
-    }
+    }.recoverCatching {
+        val prefix = "IMG_" + SimpleDateFormat("yyyyMMdd_", Locale.getDefault()).format(Date()) + System.nanoTime()
+        val suffix = when (val mimeType = resolver.getType(uri)) {
+            "image/jpg", "image/jpeg" -> "jpg"
+            "image/png" -> "png"
+            "image/webp" -> "webp"
+            else -> throw IllegalArgumentException("Cannot generate fallback filename for $mimeType $uri")
+        }
+        "$prefix.$suffix"
+    }.getOrThrow()
 }
 
 fun overWrite(imageFile: File, bitmap: Bitmap, format: Bitmap.CompressFormat = imageFile.compressFormat(), quality: Int = 100): File {
