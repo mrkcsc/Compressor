@@ -26,6 +26,7 @@ private fun cachePath(context: Context) = "${context.cacheDir.path}${separator}c
 fun File.compressFormat() = when (extension.toLowerCase()) {
     "png" -> Bitmap.CompressFormat.PNG
     "webp" -> Bitmap.CompressFormat.WEBP
+    "heic" -> null
     else -> Bitmap.CompressFormat.JPEG
 }
 
@@ -128,7 +129,12 @@ internal fun getFileName(context: Context, uri: Uri) : String {
     }.getOrThrow()
 }
 
-fun overWrite(imageFile: File, bitmap: Bitmap, format: Bitmap.CompressFormat = imageFile.compressFormat(), quality: Int = 100): File {
+fun overWrite(
+    imageFile: File,
+    bitmap: Bitmap,
+    format: Bitmap.CompressFormat = imageFile.compressFormat() ?: Bitmap.CompressFormat.JPEG,
+    quality: Int = 100
+): File {
     val result = if (format == imageFile.compressFormat()) {
         imageFile
     } else {
@@ -139,7 +145,12 @@ fun overWrite(imageFile: File, bitmap: Bitmap, format: Bitmap.CompressFormat = i
     return result
 }
 
-fun saveBitmap(bitmap: Bitmap, destination: File, format: Bitmap.CompressFormat = destination.compressFormat(), quality: Int = 100) {
+fun saveBitmap(
+    bitmap: Bitmap,
+    destination: File,
+    format: Bitmap.CompressFormat = destination.compressFormat() ?: Bitmap.CompressFormat.JPEG,
+    quality: Int = 100
+) {
     destination.parentFile?.mkdirs()
     var fileOutputStream: FileOutputStream? = null
     try {
